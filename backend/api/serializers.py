@@ -51,8 +51,8 @@ class IngredientsInRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipesListSerializer(serializers.ModelSerializer):
-    tags = TagsSerializer(many=True)
-    author = UserReadSerializer()
+    tags = TagsSerializer(many=True, read_only=True)
+    author = UserReadSerializer(read_only=True)
 
     class Meta:
         model = Recipes
@@ -60,14 +60,9 @@ class RecipesListSerializer(serializers.ModelSerializer):
 
 
 class RecipesCreateSerializer(serializers.ModelSerializer):
-    # tags = ???
-    author = UserReadSerializer()
-    is_favourite = serializers.BooleanField(required=False)
-    is_in_shopping_cart = serializers.BooleanField(required=False)
-
     class Meta:
         model = Recipes
-        exclude = ('pub_date', )
+        exclude = ('pub_date', 'id', 'tags', 'author')
 
 
 class RecipesReadSerializer(serializers.ModelSerializer):
