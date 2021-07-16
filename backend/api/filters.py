@@ -7,14 +7,14 @@ class RecipesFilter(filters.FilterSet):
 
     # TODO: проверить, работает ли это шиза
     def filter_is_favorited(self, queryset, name, value):
-        ids = set(self.request.user.user_favorites.values_list('recipe__id', flat=True))
+        ids = list(self.request.user.user_favorites.values_list('recipe__id', flat=True))
         if value == 1:
             return queryset.filter(id__in=ids)
         elif value == 0:
             return queryset.exclude(id__in=ids)
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
-        ids = set(self.request.user.shop_list.values_list('recipe__id', flat=True))
+        ids = list(self.request.user.shop_list.values_list('recipe__id', flat=True))
         if value == 1:
             return queryset.filter(id__in=ids)
         elif value == 0:

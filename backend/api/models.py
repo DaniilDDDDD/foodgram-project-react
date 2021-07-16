@@ -5,6 +5,11 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+class Ingredients(models.Model):
+    name = models.CharField(blank=False, null=False, max_length=200, unique=True)
+    measurement_unit = models.CharField(blank=False, null=False, max_length=200)
+
+
 class Tags(models.Model):
     name = models.CharField(blank=False, null=False, max_length=200)
     colour = models.CharField(blank=False, null=True, max_length=100)
@@ -17,14 +22,20 @@ class Recipes(models.Model):
     image = models.ImageField(upload_to='api/recipes/', blank=False, null=False)
     text = models.TextField(blank=False, null=False)
     tags = models.ManyToManyField(Tags, blank=False, null=False, related_name='recipes')
-    ingredients = models.JSONField(blank=False, null=False)
     cooking_time = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=False, null=False)
     pub_date = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-pub_date']
 
-class Ingredients(models.Model):
-    name = models.CharField(blank=False, null=False, max_length=200)
-    measurement_unit = models.CharField(blank=False, null=False, max_length=200)
+
+class RecipeIngredients(models.Model):
+    key = models.BigAutoField(primary_key=True)
+    recipe = models.ForeignKey(Recipes, on_delete=models.CASCADE, related_name='recipe_ingredient', blank=False,
+                               null=False)
+    ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE, related_name='recipe_ingredient',
+                                   blank=False, null=False)
+    amount = models.IntegerField(blank=False, null=False)
 
 
 class Favourites(models.Model):
