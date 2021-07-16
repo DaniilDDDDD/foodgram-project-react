@@ -1,7 +1,12 @@
+from abc import ABC
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from djoser.compat import get_user_email, get_user_email_field_name
 from djoser.conf import settings
+
+import base64
+import uuid
 
 from .models import Recipes, Tags, Ingredients, RecipeIngredients
 
@@ -25,6 +30,16 @@ User = get_user_model()
 #                 instance.is_active = False
 #                 instance.save(update_fields=["is_active"])
 #         return super().update(instance, validated_data)
+
+class CustomImageField(serializers.Field):
+    def to_internal_value(self, data):
+        data = data.strip('data:image/png;base64,')
+        image_data = base64.b64decode(data)
+        filename = uuid.uuid4().hex
+        image = open(f'{filename}.png', 'wb')
+        image.write(image_data)
+        image.close()
+        return image
 
 
 class RecipesReadSerializer(serializers.ModelSerializer):
@@ -95,6 +110,7 @@ class CreateRecipeIngredientsSerializer(serializers.ModelSerializer):
 
 class RecipesCreateSerializer(serializers.ModelSerializer):
     ingredients = CreateRecipeIngredientsSerializer(many=True, source='recipe_ingredient')
+    image = CustomImageField()
 
     class Meta:
         model = Recipes
@@ -150,6 +166,7 @@ class RecipesListSerializer(serializers.ModelSerializer):
     ingredients = ListRecipeIngredientsSerializer(many=True, read_only=True, source='recipe_ingredient')
     tags = TagsSerializer(many=True, read_only=True)
     author = UserReadSerializer(many=False, read_only=True)
+    image = serializers.SerializerMethodField(method_name='get_image')
     is_favorited = serializers.SerializerMethodField(method_name='get_is_favorited')
     is_in_shopping_cart = serializers.SerializerMethodField(method_name='get_is_in_shopping_cart')
 
@@ -157,6 +174,9 @@ class RecipesListSerializer(serializers.ModelSerializer):
         model = Recipes
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
                   'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time')
+
+    def get_image(self, obj):
+        return obj.image.url
 
     def get_is_favorited(self, obj):
         return self.context.get('request').user.user_favorites.get(recipe=obj).exists()

@@ -19,7 +19,7 @@ class Tags(models.Model):
 class Recipes(models.Model):
     author = models.ForeignKey(User, blank=False, null=False, related_name='recipes', on_delete=models.SET_NULL)
     name = models.CharField(blank=False, null=False, max_length=200)
-    image = models.ImageField(upload_to='api/recipes/', blank=False, null=False)
+    image = models.ImageField(upload_to='recipes/images/', blank=False, null=False)
     text = models.TextField(blank=False, null=False)
     tags = models.ManyToManyField(Tags, blank=False, null=False, related_name='recipes')
     cooking_time = models.PositiveIntegerField(validators=[MinValueValidator(1)], blank=False, null=False)
