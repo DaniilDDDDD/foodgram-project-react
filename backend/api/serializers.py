@@ -1,35 +1,15 @@
-from abc import ABC
-
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from djoser.compat import get_user_email, get_user_email_field_name
-from djoser.conf import settings
+from django.core.validators import RegexValidator
 
 import base64
 import uuid
+import re
 
 from .models import Recipes, Tags, Ingredients, RecipeIngredients
 
 User = get_user_model()
 
-
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = tuple(User.REQUIRED_FIELDS) + (
-#             settings.USER_ID_FIELD,
-#             settings.LOGIN_FIELD,
-#         )
-#         read_only_fields = (settings.LOGIN_FIELD,)
-#
-#     def update(self, instance, validated_data):
-#         email_field = get_user_email_field_name(User)
-#         if settings.SEND_ACTIVATION_EMAIL and email_field in validated_data:
-#             instance_email = get_user_email(instance)
-#             if instance_email != validated_data[email_field]:
-#                 instance.is_active = False
-#                 instance.save(update_fields=["is_active"])
-#         return super().update(instance, validated_data)
 
 class CustomImageField(serializers.Field):
     def to_internal_value(self, data):
@@ -57,6 +37,36 @@ class UserReadSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         return self.context.get('request').user.follower.get(author=obj).exists()
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'first_name', 'last_name')
+
+        def validate(self, data):
+            if not data['email']:
+                raise serializers.ValidationError("'email' field is required.")
+            if not data['username']:
+                raise serializers.ValidationError("'username' field is required.")
+            if not data['first_name']:
+                raise serializers.ValidationError("'first_name' field is required.")
+            if not data['last_name']:
+                raise serializers.ValidationError("'last_name' field is required.")
+
+            if len(data['email']) > 254:
+                raise serializers.ValidationError("'email' field is too long.")
+            if len(data['username']) > 150:
+                raise serializers.ValidationError("'username' field is too long.")
+            if len(data['first_name']) > 150:
+                raise serializers.ValidationError("'first_name' field is too long.")
+            if len(data['last_name']) > 150:
+                raise serializers.ValidationError("'last_name' field is too long.")
+
+            if not re.match(r'^[\w.@+-]+\z', data['username']):
+                raise serializers.ValidationError("Value for 'username' not matches regular expression.")
+
+            return data
 
 
 class UserSubscriptionSerializer(serializers.ModelSerializer):

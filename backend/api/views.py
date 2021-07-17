@@ -1,16 +1,17 @@
-from rest_framework import viewsets, generics, filters
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status, generics
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .serializers import UserReadSerializer, UserSubscriptionSerializer, TagsSerializer, IngredientsSerializer, RecipesReadSerializer, \
-    RecipesCreateSerializer, RecipesListSerializer
+from .serializers import UserReadSerializer, UserSubscriptionSerializer, TagsSerializer, \
+    IngredientsSerializer, RecipesReadSerializer, \
+    RecipesCreateSerializer, RecipesListSerializer, UserCreateSerializer
 from .models import Tags, Ingredients, Favourites, Recipes, Follow, ShoppingCart
 from .paginators import VariablePageSizePaginator
 from .filters import RecipesFilter
@@ -147,55 +148,96 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class FollowViewSet(generics.RetrieveDestroyAPIView):
-    serializer_class = UserSubscriptionSerializer
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    http_method_names = ['get', 'delete']
-    lookup_field = None
-    lookup_url_kwarg = 'id'
-    permission_classes = [IsAuthenticated, ]
-
-    def get_serializer_context(self):
-        context = super(FollowViewSet, self).get_serializer_context()
-        context.update({"request": self.request})
-        return context
-
-    def retrieve(self, request, *args, **kwargs):
-        author = self.get_object()
-        if Follow.objects.get(user=request.user, author=author).exists():
-            data = {
-                'errors': 'Подписка уже существует!'
-            }
-            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            Follow.objects.create(user=request.user, author=author)
-            serializer = self.get_serializer(author)
-            data = serializer.data
-            return Response(data=data, status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, *args, **kwargs):
-        author = self.get_object()
-        if Follow.objects.get(user=request.user, author=author).exists():
-            Follow.objects.get(user=request.user, author=author).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            data = {
-                'errors': 'Вы не подписаны на этого пользователя!'
-            }
-            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserSubscriptionsAPIView(generics.ListAPIView):
-    serializer_class = UserSubscriptionSerializer
-    permission_classes = [IsAuthenticated, ]
     pagination_class = VariablePageSizePaginator
-    http_method_names = ['get', ]
-    lookup_field = None
-
-    def get_queryset(self):
-        return self.request.user.follower.all().values_list('author', flat=True)
+    permission_classes = [IsAuthenticated, ]
+    lookup_field = 'id'
+    http_method_names = ['get', 'post', 'delete']
 
     def get_serializer_context(self):
-        context = super(UserSubscriptions, self).get_serializer_context()
+        context = super(UserViewSet, self).get_serializer_context()
         context.update({"request": self.request})
         return context
+
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'GET':
+            return UserReadSerializer
+        return UserCreateSerializer
+
+    def perform_create(self, serializer):
+        return serializer.save()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        data = serializer.data
+        data['id'] = instance.id
+        return Response(data=data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
+            url_path='me')
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(data=serializer.data)
+
+    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
+            url_path='subscriptions')
+    def subscriptions(self, request):
+        queryset = self.request.user.follower.all().values_list('author', flat=True)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = UserSubscriptionSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = UserSubscriptionSerializer(page, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
+            url_path='subscribe')
+    def subscribe(self, request):
+        author = self.get_object()
+        if request.method == 'GET':
+            if Follow.objects.get(user=request.user, author=author).exists():
+                data = {
+                    'errors': 'Подписка уже существует!'
+                }
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                Follow.objects.create(user=request.user, author=author)
+                serializer = UserSubscriptionSerializer(author)
+                data = serializer.data
+                return Response(data=data, status=status.HTTP_201_CREATED)
+        else:
+            if Follow.objects.get(user=request.user, author=author).exists():
+                Follow.objects.get(user=request.user, author=author).delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                data = {
+                    'errors': 'Вы не подписаны на этого пользователя!'
+                }
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['post'], detail=False, permission_classes=[IsAuthenticated, ],
+            url_path='set_password')
+    def set_password(self, request):
+        if not request.data['new_password']:
+            return Response(
+                data={'new_password': 'Обязательное поле.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not request.data['current_password']:
+            return Response(
+                data={'current_password': 'Обязательное поле.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if request.data['new_password'] == request.data['current_password']:
+            return Response(
+                data={'error': "Поле 'new_password' и 'current_password' совпадают"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if request.user.check_password(request.data['new_password']):
+            request.user.set_password(request.data['new_password'])
+            request.user.save()
+        return Response(data=request.data, status=status.HTTP_201_CREATED)
