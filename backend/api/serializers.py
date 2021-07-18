@@ -1,10 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MaxLengthValidator
 
 import base64
 import uuid
-import re
 
 from .models import Recipes, Tags, Ingredients, RecipeIngredients
 
@@ -22,12 +21,6 @@ class CustomImageField(serializers.Field):
         return image
 
 
-class RecipesReadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipes
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
 class UserReadSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(method_name='get_is_subscribed')
 
@@ -36,37 +29,48 @@ class UserReadSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        return self.context.get('request').user.follower.get(author=obj).exists()
+        return self.context.get('request').user.follower.filter(author=obj).exists()
+
+
+def unique_user_validator(value):
+    if User.objects.filter(username=value).exists():
+        raise serializers.ValidationError('A user with that username already exists')
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[
+            MaxLengthValidator(254)
+        ]
+    )
+    username = serializers.CharField(
+        required=True,
+        validators=[
+            MaxLengthValidator(150),
+            unique_user_validator,
+            # RegexValidator(regex='^[\w.@+-]+\z')  #TODO: fix regex
+        ]
+    )
+    first_name = serializers.CharField(
+        required=True,
+        validators=[
+            MaxLengthValidator(150)
+        ]
+    )
+    last_name = serializers.CharField(
+        required=True,
+        validators=[
+            MaxLengthValidator(150)
+        ]
+    )
+    password = serializers.CharField(
+        required=True
+    )
+
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name')
-
-        def validate(self, data):
-            if not data['email']:
-                raise serializers.ValidationError("'email' field is required.")
-            if not data['username']:
-                raise serializers.ValidationError("'username' field is required.")
-            if not data['first_name']:
-                raise serializers.ValidationError("'first_name' field is required.")
-            if not data['last_name']:
-                raise serializers.ValidationError("'last_name' field is required.")
-
-            if len(data['email']) > 254:
-                raise serializers.ValidationError("'email' field is too long.")
-            if len(data['username']) > 150:
-                raise serializers.ValidationError("'username' field is too long.")
-            if len(data['first_name']) > 150:
-                raise serializers.ValidationError("'first_name' field is too long.")
-            if len(data['last_name']) > 150:
-                raise serializers.ValidationError("'last_name' field is too long.")
-
-            if not re.match(r'^[\w.@+-]+\z', data['username']):
-                raise serializers.ValidationError("Value for 'username' not matches regular expression.")
-
-            return data
+        fields = ('email', 'username', 'first_name', 'last_name', 'password')
 
 
 class UserSubscriptionSerializer(serializers.ModelSerializer):
@@ -79,7 +83,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count')
 
     def get_is_subscribed(self, obj):
-        return self.context.get('request').user.follower.get(author=obj).exists()
+        return self.context.get('request').user.follower.filter(author=obj).exists()
 
     def get_recipes(self, obj):
         recipes_limit = self.context.get('request').GET.get('recipes_limit', None)
@@ -93,7 +97,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes_count(self, obj):
         recipes_limit = self.context.get('request').GET.get('recipes_limit', None)
         recipes_number = self.context.get('request').user.recipes.all().count()
-        if recipes_limit >= recipes_number:
+        if recipes_limit is None or recipes_limit >= recipes_number:
             return recipes_number
         return recipes_limit
 
@@ -108,6 +112,12 @@ class IngredientsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredients
         fields = '__all__'
+
+
+class RecipesReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipes
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class CreateRecipeIngredientsSerializer(serializers.ModelSerializer):
@@ -189,7 +199,7 @@ class RecipesListSerializer(serializers.ModelSerializer):
         return obj.image.url
 
     def get_is_favorited(self, obj):
-        return self.context.get('request').user.user_favorites.get(recipe=obj).exists()
+        return self.context.get('request').user.user_favorites.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
-        return self.context.get('request').user.shop_list.get(recipe=obj).exists()
+        return self.context.get('request').user.shop_list.filter(recipe=obj).exists()

@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework import status
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
@@ -15,7 +15,7 @@ from .serializers import UserReadSerializer, UserSubscriptionSerializer, TagsSer
 from .models import Tags, Ingredients, Favourites, Recipes, Follow, ShoppingCart
 from .paginators import VariablePageSizePaginator
 from .filters import RecipesFilter
-from .permissions import IsOwnerOrAuthenticatedOrReadOnly
+from .permissions import IsOwnerOrAuthenticatedOrReadOnly, RegistrationOrGetUsersPermission
 
 User = get_user_model()
 
@@ -49,10 +49,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipesListSerializer
         return RecipesCreateSerializer
 
-    def get_serializer_context(self):
-        context = super(RecipesViewSet, self).get_serializer_context()
-        context.update({"request": self.request})
-        return context
+    # def get_serializer_context(self):
+    #     context = super(RecipesViewSet, self).get_serializer_context()
+    #     context.update({"request": self.request})
+    #     return context
 
     def perform_create(self, serializer):
         return serializer.save()
@@ -107,10 +107,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
             url_path='favourite')
-    def favourite(self, request):
+    def favourite(self, request, id):
         recipe = self.get_object()
         if request.method == 'GET':
-            if Favourites.objects.get(user=request.user, recipe=recipe).exists():
+            if Favourites.objects.filter(user=request.user, recipe=recipe).exists():
                 data = {
                     'errors': 'Рецепт уже в избранном!'
                 }
@@ -120,7 +120,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 serializer = RecipesReadSerializer(recipe)
                 return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if Favourites.objects.get(user=request.user, recipe=recipe).exists():
+            if Favourites.objects.filter(user=request.user, recipe=recipe).exists():
                 Favourites.objects.get(user=request.user, recipe=recipe).delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
@@ -128,10 +128,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
             url_path='shopping_cart')
-    def shopping_cart(self, request):
+    def shopping_cart(self, request, id):
         recipe = self.get_object()
         if request.method == 'GET':
-            if ShoppingCart.objects.get(user=request.user, recipe=recipe).exists():
+            if ShoppingCart.objects.filter(user=request.user, recipe=recipe).exists():
                 data = {
                     'errors': 'Уже в списке покупок!'
                 }
@@ -141,7 +141,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 serializer = RecipesReadSerializer(recipe)
                 return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if ShoppingCart.objects.get(user=request.user, recipe=recipe).exists():
+            if ShoppingCart.objects.filter(user=request.user, recipe=recipe).exists():
                 ShoppingCart.objects.get(user=request.user, recipe=recipe).delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
@@ -151,22 +151,26 @@ class RecipesViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     pagination_class = VariablePageSizePaginator
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [RegistrationOrGetUsersPermission, ]
     lookup_field = 'id'
     http_method_names = ['get', 'post', 'delete']
 
-    def get_serializer_context(self):
-        context = super(UserViewSet, self).get_serializer_context()
-        context.update({"request": self.request})
-        return context
+    # def get_serializer_context(self):
+    #     context = super(UserViewSet, self).get_serializer_context()
+    #     context.update({'request': self.request})
+    #     return context
 
-    def get_serializer(self, *args, **kwargs):
+    def get_serializer_class(self):
         if self.request.method == 'GET':
             return UserReadSerializer
         return UserCreateSerializer
 
     def perform_create(self, serializer):
-        return serializer.save()
+        instance = serializer.save()
+        if 'password' in serializer.data:
+            instance.set_password(serializer.data['password'])
+            instance.save()
+        return instance
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -175,6 +179,7 @@ class UserViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         data = serializer.data
         data['id'] = instance.id
+        del data['password']
         return Response(data=data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
@@ -186,31 +191,31 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
             url_path='subscriptions')
     def subscriptions(self, request):
-        queryset = self.request.user.follower.all().values_list('author', flat=True)
+        queryset = User.objects.filter(id__in=list(request.user.follower.all().values_list('author', flat=True)))
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = UserSubscriptionSerializer(page, many=True)
+            serializer = UserSubscriptionSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
-        serializer = UserSubscriptionSerializer(page, many=True)
+        serializer = UserSubscriptionSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
             url_path='subscribe')
-    def subscribe(self, request):
+    def subscribe(self, request, id):
         author = self.get_object()
         if request.method == 'GET':
-            if Follow.objects.get(user=request.user, author=author).exists():
+            if Follow.objects.filter(user=request.user, author=author).exists():
                 data = {
                     'errors': 'Подписка уже существует!'
                 }
                 return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
             else:
                 Follow.objects.create(user=request.user, author=author)
-                serializer = UserSubscriptionSerializer(author)
+                serializer = UserSubscriptionSerializer(author, context={'request': self.request})
                 data = serializer.data
                 return Response(data=data, status=status.HTTP_201_CREATED)
         else:
-            if Follow.objects.get(user=request.user, author=author).exists():
+            if Follow.objects.filter(user=request.user, author=author).exists():
                 Follow.objects.get(user=request.user, author=author).delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
@@ -222,22 +227,28 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(methods=['post'], detail=False, permission_classes=[IsAuthenticated, ],
             url_path='set_password')
     def set_password(self, request):
-        if not request.data['new_password']:
+        if 'new_password' not in request.data:
             return Response(
-                data={'new_password': 'Обязательное поле.'},
+                data={'new_password': ['This field is required!']},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if not request.data['current_password']:
+        if 'new_password' not in request.data:
             return Response(
-                data={'current_password': 'Обязательное поле.'},
+                data={'current_password': ['This field is required!']},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if request.data['new_password'] == request.data['current_password']:
             return Response(
-                data={'error': "Поле 'new_password' и 'current_password' совпадают"},
+                data={'error': ["'new_password' and 'current_password' are equal!"]},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if request.user.check_password(request.data['new_password']):
             request.user.set_password(request.data['new_password'])
             request.user.save()
-        return Response(data=request.data, status=status.HTTP_201_CREATED)
+            return Response(data=request.data, status=status.HTTP_201_CREATED)
+        return Response(
+            data={
+                'new_password': ['This value can not be user as password!']
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
