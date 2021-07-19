@@ -64,7 +64,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = self.perform_create(serializer)
-        serializer = RecipesListSerializer(instance)
+        serializer = RecipesListSerializer(instance, context={'request': self.request})
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -74,7 +74,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         instance = self.perform_update(serializer)
-        serializer = RecipesListSerializer(instance)
+        serializer = RecipesListSerializer(instance, context={'request': self.request})
 
         if getattr(instance, '_prefetched_objects_cache', None):
             # If 'prefetch_related' has been applied to a queryset, we need to
