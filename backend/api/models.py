@@ -11,9 +11,9 @@ class Ingredients(models.Model):
 
 
 class Tags(models.Model):
-    name = models.CharField(blank=False, null=False, max_length=200)
-    colour = models.CharField(blank=False, null=True, max_length=100)
-    slug = models.SlugField(validators=[RegexValidator(regex='^[-a-zA-Z0-9_]+$')], blank=False, null=True)
+    name = models.CharField(blank=False, null=False, max_length=200, unique=True)
+    colour = models.CharField(blank=False, null=False, max_length=100, unique=True)
+    slug = models.SlugField(validators=[RegexValidator(regex='^[-a-zA-Z0-9_]+$')], blank=False, null=False, unique=True)
 
 
 class Recipes(models.Model):

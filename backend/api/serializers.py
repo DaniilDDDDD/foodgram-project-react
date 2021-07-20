@@ -6,8 +6,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 import base64
 import uuid
 import tempfile
+import os
 
 from .models import Recipes, Tags, Ingredients, RecipeIngredients
+from backend.settings import MEDIA_ROOT
 
 User = get_user_model()
 
@@ -43,6 +45,8 @@ class UserReadSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
+        if not self.context.get('request').user.is_authenticated:
+            return False
         return self.context.get('request').user.follower.filter(author=obj).exists()
 
 
@@ -102,7 +106,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         recipes_limit = self.context.get('request').GET.get('recipes_limit', None)
         if recipes_limit is not None:
-            recipes = obj.recipes.all()[:recipes_limit]
+            recipes = obj.recipes.all()[:int(recipes_limit)]
         else:
             recipes = obj.recipes.all()
 
@@ -112,7 +116,7 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes_count(self, obj):
         recipes_limit = self.context.get('request').GET.get('recipes_limit', None)
         recipes_number = self.context.get('request').user.recipes.all().count()
-        if recipes_limit is None or recipes_limit >= recipes_number:
+        if recipes_limit is None or int(recipes_limit) >= recipes_number:
             return recipes_number
         return recipes_limit
 
@@ -161,10 +165,13 @@ class RecipesCreateSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         instance.text = validated_data.get('text', instance.text)
-        instance.tags = validated_data.get('tags', instance.tags)
+        instance.tags.set(validated_data.get('tags', instance.tags))
         instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
         instance.name = validated_data.get('name', instance.name)
+        if 'image' in validated_data:
+            os.remove(MEDIA_ROOT + '/' + str(instance.image))
         instance.image = validated_data.get('image', instance.image)
+        instance.save()
 
         instance.recipe_ingredient.all().delete()
         ingredients = validated_data.get('ingredients')
@@ -217,7 +224,11 @@ class RecipesListSerializer(serializers.ModelSerializer):
         return obj.image.url
 
     def get_is_favorited(self, obj):
+        if not self.context.get('request').user.is_authenticated:
+            return False
         return self.context.get('request').user.user_favorites.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
+        if not self.context.get('request').user.is_authenticated:
+            return False
         return self.context.get('request').user.shop_list.filter(recipe=obj).exists()

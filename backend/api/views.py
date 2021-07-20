@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
@@ -14,7 +14,7 @@ from .serializers import UserReadSerializer, UserSubscriptionSerializer, TagsSer
     RecipesCreateSerializer, RecipesListSerializer, UserCreateSerializer
 from .models import Tags, Ingredients, Favourites, Recipes, Follow, ShoppingCart
 from .paginators import VariablePageSizePaginator
-from .filters import RecipesFilter
+from .filters import RecipesFilter, IngredientFilter
 from .permissions import IsOwnerOrAuthenticatedOrReadOnly, RegistrationOrGetUsersPermission
 
 User = get_user_model()
@@ -23,6 +23,7 @@ User = get_user_model()
 class TagsViewSet(viewsets.ModelViewSet):
     serializer_class = TagsSerializer
     queryset = Tags.objects.all()
+    permission_classes = [AllowAny, ]
     lookup_field = 'id'
     http_method_names = ['get', ]
 
@@ -32,8 +33,9 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     queryset = Ingredients.objects.all()
     lookup_field = 'id'
     http_method_names = ['get', ]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['name']
+    permission_classes = [AllowAny, ]
+    filter_backends = [DjangoFilterBackend, ]
+    filterset_class = IngredientFilter
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
