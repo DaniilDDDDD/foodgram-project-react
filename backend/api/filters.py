@@ -1,11 +1,10 @@
 from django_filters import rest_framework as filters
 
-from .models import Recipes, Ingredients
+from .models import Recipe, Ingredient
 
 
 class RecipesFilter(filters.FilterSet):
 
-    # TODO: проверить, работает ли это шиза
     def filter_is_favorited(self, queryset, name, value):
         if not self.request.user.is_authenticated:
             return queryset
@@ -29,7 +28,7 @@ class RecipesFilter(filters.FilterSet):
     tags = filters.CharFilter(field_name='tags__slug', lookup_expr='exact')
 
     class Meta:
-        model = Recipes
+        model = Recipe
         fields = ['author', 'tags']
 
 
@@ -37,5 +36,5 @@ class IngredientFilter(filters.FilterSet):
     name = filters.CharFilter(lookup_expr='startswith')
 
     class Meta:
-        model = Ingredients
+        model = Ingredient
         fields = ['name', ]

@@ -12,7 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import UserReadSerializer, UserSubscriptionSerializer, TagsSerializer, \
     IngredientsSerializer, RecipesReadSerializer, \
     RecipesCreateSerializer, RecipesListSerializer, UserCreateSerializer
-from .models import Tags, Ingredients, Favourites, Recipes, Follow, ShoppingCart
+from .models import Tag, Ingredient, Favourite, Recipe, Follow, ShoppingCart
 from .paginators import VariablePageSizePaginator
 from .filters import RecipesFilter, IngredientFilter
 from .permissions import IsOwnerOrAuthenticatedOrReadOnly, RegistrationOrGetUsersPermission
@@ -22,7 +22,7 @@ User = get_user_model()
 
 class TagsViewSet(viewsets.ModelViewSet):
     serializer_class = TagsSerializer
-    queryset = Tags.objects.all()
+    queryset = Tag.objects.all()
     permission_classes = [AllowAny, ]
     lookup_field = 'id'
     http_method_names = ['get', ]
@@ -30,7 +30,7 @@ class TagsViewSet(viewsets.ModelViewSet):
 
 class IngredientsViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientsSerializer
-    queryset = Ingredients.objects.all()
+    queryset = Ingredient.objects.all()
     lookup_field = 'id'
     http_method_names = ['get', ]
     permission_classes = [AllowAny, ]
@@ -39,7 +39,7 @@ class IngredientsViewSet(viewsets.ModelViewSet):
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
-    queryset = Recipes.objects.all()
+    queryset = Recipe.objects.all()
     lookup_field = 'id'
     pagination_class = VariablePageSizePaginator
     http_method_names = ['get', 'post', 'put', 'delete']
@@ -50,11 +50,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if self.request.method in ['GET']:
             return RecipesListSerializer
         return RecipesCreateSerializer
-
-    # def get_serializer_context(self):
-    #     context = super(RecipesViewSet, self).get_serializer_context()
-    #     context.update({"request": self.request})
-    #     return context
 
     def perform_create(self, serializer):
         return serializer.save()
@@ -79,14 +74,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer = RecipesListSerializer(instance, context={'request': self.request})
 
         if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
 
-    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
-            url_path='download_shopping_cart')
+    @action(
+        methods=['get'], detail=False,
+        permission_classes=[IsAuthenticated, ], url_path='download_shopping_cart'
+    )
     def download_shopping_cart(self, request):
         recipes = list(request.user.shop_list.values_list('recipe', flat=True))
         data = {}
@@ -107,29 +102,33 @@ class RecipesViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'attachment; filename="Ingredients list"'
         return response
 
-    @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
-            url_path='favourite')
+    @action(
+        methods=['get', 'delete'], detail=True,
+        permission_classes=[IsAuthenticated, ], url_path='favourite'
+    )
     def favourite(self, request, id):
         recipe = self.get_object()
         if request.method == 'GET':
-            if Favourites.objects.filter(user=request.user, recipe=recipe).exists():
+            if Favourite.objects.filter(user=request.user, recipe=recipe).exists():
                 data = {
                     'errors': 'Рецепт уже в избранном!'
                 }
                 return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
             else:
-                Favourites.objects.create(user=request.user, recipe=recipe)
+                Favourite.objects.create(user=request.user, recipe=recipe)
                 serializer = RecipesReadSerializer(recipe)
                 return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if Favourites.objects.filter(user=request.user, recipe=recipe).exists():
-                Favourites.objects.get(user=request.user, recipe=recipe).delete()
+            if Favourite.objects.filter(user=request.user, recipe=recipe).exists():
+                Favourite.objects.get(user=request.user, recipe=recipe).delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
-            url_path='shopping_cart')
+    @action(
+        methods=['get', 'delete'], detail=True,
+        permission_classes=[IsAuthenticated, ], url_path='shopping_cart'
+    )
     def shopping_cart(self, request, id):
         recipe = self.get_object()
         if request.method == 'GET':
@@ -157,11 +156,6 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     http_method_names = ['get', 'post', 'delete']
 
-    # def get_serializer_context(self):
-    #     context = super(UserViewSet, self).get_serializer_context()
-    #     context.update({'request': self.request})
-    #     return context
-
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return UserReadSerializer
@@ -184,16 +178,24 @@ class UserViewSet(viewsets.ModelViewSet):
         del data['password']
         return Response(data=data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
-            url_path='me')
+    @action(
+        methods=['get'], detail=False,
+        permission_classes=[IsAuthenticated, ], url_path='me'
+    )
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(data=serializer.data)
 
-    @action(methods=['get'], detail=False, permission_classes=[IsAuthenticated, ],
-            url_path='subscriptions')
+    @action(
+        methods=['get'], detail=False,
+        permission_classes=[IsAuthenticated, ], url_path='subscriptions'
+    )
     def subscriptions(self, request):
-        queryset = User.objects.filter(id__in=list(request.user.follower.all().values_list('author', flat=True)))
+        queryset = User.objects.filter(
+            id__in=list(
+                request.user.follower.all().values_list('author', flat=True)
+            )
+        )
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = UserSubscriptionSerializer(page, many=True, context={'request': request})
@@ -201,8 +203,10 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSubscriptionSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
-    @action(methods=['get', 'delete'], detail=True, permission_classes=[IsAuthenticated, ],
-            url_path='subscribe')
+    @action(
+        methods=['get', 'delete'], detail=True,
+        permission_classes=[IsAuthenticated, ], url_path='subscribe'
+    )
     def subscribe(self, request, id):
         author = self.get_object()
         if request.method == 'GET':
@@ -226,8 +230,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 }
                 return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['post'], detail=False, permission_classes=[IsAuthenticated, ],
-            url_path='set_password')
+    @action(
+        methods=['post'], detail=False,
+        permission_classes=[IsAuthenticated, ], url_path='set_password'
+    )
     def set_password(self, request):
         if 'new_password' not in request.data:
             return Response(
