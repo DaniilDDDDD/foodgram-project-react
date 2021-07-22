@@ -8,7 +8,6 @@ RUN pip install -r requirements.txt
 
 RUN python manage.py collectstatic
 
-# TODO: миграции не выполняются
-CMD python manage.py migrate
+RUN python manage.py migrate
 
 CMD gunicorn backend.wsgi:application --bind 0.0.0.0:8000
