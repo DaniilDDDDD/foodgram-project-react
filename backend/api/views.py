@@ -42,7 +42,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     lookup_field = 'id'
     pagination_class = VariablePageSizePaginator
-    http_method_names = ['get', 'post', 'put', 'delete']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
     filterset_class = RecipesFilter
     permission_classes = [IsOwnerOrAuthenticatedOrReadOnly, ]
 
@@ -83,28 +83,29 @@ class RecipesViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated, ], url_path='download_shopping_cart'
     )
     def download_shopping_cart(self, request):
-        recipes = list(request.user.shop_list.values_list('recipe', flat=True))
+        recipes_ids = request.user.shop_list.values_list('recipe', flat=True)
+        recipes = list(Recipe.objects.filter(id__in=recipes_ids))
         data = {}
         for recipe in recipes:
-            recipe_ingredients = list(recipe.recipe_ingredient)
+            recipe_ingredients = list(recipe.recipe_ingredient.all())
             for recipe_ingredient in recipe_ingredients:
                 if recipe_ingredient.ingredient.name in data:
                     data[recipe_ingredient.ingredient.name][0] += recipe_ingredient.amount
                 else:
-                    data[recipe_ingredient.ingredient.name] = (
+                    data[recipe_ingredient.ingredient.name] = [
                         recipe_ingredient.amount,
                         recipe_ingredient.ingredient.measurement_unit
-                    )
+                    ]
         result = ''
         for key in data:
-            result += f'{key} ({data[key][1]}) - {data[key][0]}\n'.capitalize()
+            result += f'· {key} ({data[key][1]}) - {data[key][0]}\n'.capitalize()
         response = HttpResponse(result, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename="Ingredients list"'
         return response
 
     @action(
         methods=['get', 'delete'], detail=True,
-        permission_classes=[IsAuthenticated, ], url_path='favourite'
+        permission_classes=[IsAuthenticated, ], url_path='favorite'
     )
     def favourite(self, request, id):
         recipe = self.get_object()
@@ -250,13 +251,22 @@ class UserViewSet(viewsets.ModelViewSet):
                 data={'error': ["'new_password' and 'current_password' are equal!"]},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        if not request.user.check_password(request.data['current_password']):
+            return Response(
+                data={
+                    'current_password': ['Provided inappropriate value!']
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if request.user.check_password(request.data['new_password']):
-            request.user.set_password(request.data['new_password'])
-            request.user.save()
-            return Response(data=request.data, status=status.HTTP_201_CREATED)
-        return Response(
-            data={
-                'new_password': ['This value can not be user as password!']
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+            return Response(
+                data={
+                    'new_password': ['Provided inappropriate value!']
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        request.user.set_password(request.data['new_password'])
+        request.user.save()
+        return Response(data=request.data, status=status.HTTP_201_CREATED)

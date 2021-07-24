@@ -17,16 +17,19 @@ User = get_user_model()
 class CustomImageField(serializers.ImageField):
 
     def to_internal_value(self, data):
-        data = data[22:]
+        data = data.strip('data:image/')
+        index = data.find(';')
+        content_type = data[:index]
+        data = data[index + 8:]
         image_data = base64.b64decode(data)
         filename = uuid.uuid4().hex
         with tempfile.TemporaryFile() as image:
             image.write(image_data)
             image.seek(0)
             file = SimpleUploadedFile(
-                name=f'{filename}.png',
+                name=f'{filename}.{content_type}',
                 content=image.read(),
-                content_type='image/png'
+                content_type=f'image/{content_type}'
             )
         return super().to_internal_value(file)
 
@@ -173,19 +176,24 @@ class RecipesCreateSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         instance.text = validated_data.get('text', instance.text)
-        instance.tags.set(validated_data.get('tags', instance.tags))
+        if 'tags' in validated_data:
+            instance.tags.set(validated_data['tags'])
+
         instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
         instance.name = validated_data.get('name', instance.name)
         if 'image' in validated_data:
             os.remove(MEDIA_ROOT + '/' + str(instance.image))
-        instance.image = validated_data.get('image', instance.image)
+            instance.image = validated_data['image']
         instance.save()
 
-        instance.recipe_ingredient.all().delete()
-        ingredients = validated_data.get('ingredients')
-        for elem in ingredients:
-            ingredient = elem.pop('id')
-            RecipeIngredient.objects.create(recipe=instance, ingredient=ingredient, **elem)
+        if 'ingredients' in validated_data:
+            print('in ingredients:')
+            print('ingredients' in validated_data)
+            instance.recipe_ingredient.all().delete()
+            ingredients = validated_data.get('ingredients')
+            for elem in ingredients:
+                ingredient = elem.pop('id')
+                RecipeIngredient.objects.create(recipe=instance, ingredient=ingredient, **elem)
         return instance
 
 
@@ -229,7 +237,9 @@ class RecipesListSerializer(serializers.ModelSerializer):
         return {'request': self.context}
 
     def get_image(self, obj):
-        return obj.image.url
+        if self.context.get('request').is_secure():
+            return 'https://' + str(self.context.get('request').get_host()) + str(obj.image.url)
+        return 'http://' + str(self.context.get('request').get_host()) + str(obj.image.url)
 
     def get_is_favorited(self, obj):
         if not self.context.get('request').user.is_authenticated:
