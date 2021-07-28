@@ -1,8 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 
-from .models import Ingredient, Tag, RecipeIngredient, \
+from .models import (
+    Ingredient, Tag, RecipeIngredient,
     Recipe, Follow, Favourite, ShoppingCart
+)
 
 User = get_user_model()
 
@@ -24,12 +26,12 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'tags__slug',)
 
     def count_in_favourites(self, obj):
-        return Favourite.objects.filter(recipe=obj).count()
+        return obj.favorited_by.all().count()
 
     count_in_favourites.short_description = 'times added to favourites'
 
     def tags_string(self, obj):
-        return list(obj.tags.all())
+        return list(obj.tags.all().values_list('slug', flat=True))
 
     tags_string.short_description = 'tags'
 

@@ -5,9 +5,7 @@ class IsOwnerOrAuthenticatedOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        if request.user.is_authenticated:
-            return True
-        return False
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -23,3 +21,8 @@ class RegistrationOrGetUsersPermission(permissions.BasePermission):
             return True
         else:
             return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_authenticated
+        return False

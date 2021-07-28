@@ -9,15 +9,18 @@ from django.http import HttpResponse
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .serializers import UserReadSerializer, \
-    UserSubscriptionSerializer, TagsSerializer, \
-    IngredientsSerializer, RecipesReadSerializer, \
-    RecipesCreateSerializer, RecipesListSerializer, UserCreateSerializer
+from .serializers import (
+    UserReadSerializer, UserSubscriptionSerializer, TagsSerializer,
+    IngredientsSerializer, RecipesReadSerializer, RecipesCreateSerializer,
+    RecipesListSerializer, UserCreateSerializer
+)
 from .models import Tag, Ingredient, Favourite, Recipe, Follow, ShoppingCart
 from .paginators import VariablePageSizePaginator
 from .filters import RecipesFilter, IngredientFilter
-from .permissions import IsOwnerOrAuthenticatedOrReadOnly, \
+from .permissions import (
+    IsOwnerOrAuthenticatedOrReadOnly,
     RegistrationOrGetUsersPermission
+)
 
 User = get_user_model()
 
@@ -102,18 +105,23 @@ class RecipesViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         recipes_ids = request.user.shop_list.values_list('recipe', flat=True)
-        recipes = list(Recipe.objects.filter(id__in=recipes_ids))
+        ingredients = list(
+            Recipe.objects.filter(id__in=recipes_ids).values_list(
+                'recipe_ingredients__ingredient__name',
+                'recipe_ingredients__ingredient__measurement_unit',
+                'recipe_ingredients__amount'
+            )
+        )
         data = {}
-        for recipe in recipes:
-            recipe_ingredients = list(recipe.recipe_ingredient.all())
-            for recipe_ingredient in recipe_ingredients:
-                if recipe_ingredient.ingredient.name in data:
-                    data[recipe_ingredient.ingredient.name][0] += recipe_ingredient.amount
-                else:
-                    data[recipe_ingredient.ingredient.name] = [
-                        recipe_ingredient.amount,
-                        recipe_ingredient.ingredient.measurement_unit
-                    ]
+        for ingredient in ingredients:
+            if ingredient[0] in data:
+                data[ingredient[0]][0] += ingredient[2]
+            else:
+                data[ingredient[0]] = [
+                    ingredient[2],
+                    ingredient[1]
+                ]
+
         result = ''
         for key in data:
             result += f'· {key} ({data[key][1]}) - {data[key][0]}\n'.capitalize()

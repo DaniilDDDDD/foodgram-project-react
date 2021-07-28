@@ -1,37 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxLengthValidator
-from django.core.files.uploadedfile import SimpleUploadedFile
 
-import base64
-import uuid
-import tempfile
 import os
 
 from .models import Recipe, Tag, Ingredient, RecipeIngredient
 from backend.settings import MEDIA_ROOT
+from .fields import CustomImageField
+from .validators import unique_username_validator, unique_email_validator
 
 User = get_user_model()
-
-
-class CustomImageField(serializers.ImageField):
-
-    def to_internal_value(self, data):
-        data = data.strip('data:image/')
-        index = data.find(';')
-        content_type = data[:index]
-        data = data[index + 8:]
-        image_data = base64.b64decode(data)
-        filename = uuid.uuid4().hex
-        with tempfile.TemporaryFile() as image:
-            image.write(image_data)
-            image.seek(0)
-            file = SimpleUploadedFile(
-                name=f'{filename}.{content_type}',
-                content=image.read(),
-                content_type=f'image/{content_type}'
-            )
-        return super().to_internal_value(file)
 
 
 class RecipesReadSerializer(serializers.ModelSerializer):
@@ -58,20 +36,6 @@ class UserReadSerializer(serializers.ModelSerializer):
         return self.context.get('request').user.follower.filter(
             author=obj
         ).exists()
-
-
-def unique_username_validator(value):
-    if User.objects.filter(username=value).exists():
-        raise serializers.ValidationError(
-            'A user with that username already exists.'
-        )
-
-
-def unique_email_validator(value):
-    if User.objects.filter(email=value).exists():
-        raise serializers.ValidationError(
-            'A user with that email already exists.'
-        )
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -187,12 +151,6 @@ class CreateRecipeIngredientsSerializer(serializers.Serializer):
     )
     amount = serializers.IntegerField(required=True)
 
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
-
 
 class RecipesCreateSerializer(serializers.Serializer):
     ingredients = CreateRecipeIngredientsSerializer(
@@ -237,14 +195,15 @@ class RecipesCreateSerializer(serializers.Serializer):
         )
         instance.name = validated_data.get('name', instance.name)
         if 'image' in validated_data:
-            os.remove(MEDIA_ROOT + '/' + str(instance.image))
+            try:
+                os.remove(MEDIA_ROOT + '/' + str(instance.image))
+            except PermissionError:
+                pass
             instance.image = validated_data['image']
         instance.save()
 
         if 'ingredients' in validated_data:
-            print('in ingredients:')
-            print('ingredients' in validated_data)
-            instance.recipe_ingredient.all().delete()
+            instance.recipe_ingredients.all().delete()
             ingredients = validated_data.get('ingredients')
             for elem in ingredients:
                 ingredient = elem.pop('id')
@@ -291,7 +250,7 @@ class RecipesListSerializer(serializers.ModelSerializer):
     ingredients = ListRecipeIngredientsSerializer(
         many=True,
         read_only=True,
-        source='recipe_ingredient'
+        source='recipe_ingredients'
     )
     tags = TagsSerializer(
         many=True,
