@@ -52,9 +52,6 @@ class Tag(models.Model):
         verbose_name = 'Tag'
         verbose_name_plural = 'Tags'
 
-    # def __str__(self):
-    #     return self.slug
-
 
 class Recipe(models.Model):
     author = models.ForeignKey(
