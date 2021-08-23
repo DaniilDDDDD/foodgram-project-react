@@ -1,8 +1,8 @@
+import os
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxLengthValidator
-
-import os
+from django.core.validators import MaxLengthValidator, MinValueValidator
 
 from .models import Recipe, Tag, Ingredient, RecipeIngredient
 from backend.settings import MEDIA_ROOT
@@ -149,7 +149,12 @@ class CreateRecipeIngredientsSerializer(serializers.Serializer):
         queryset=Ingredient.objects.all(),
         required=True
     )
-    amount = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(
+        required=True,
+        validators=[
+            MinValueValidator(1)
+        ]
+    )
 
 
 class RecipesCreateSerializer(serializers.Serializer):
@@ -165,7 +170,38 @@ class RecipesCreateSerializer(serializers.Serializer):
         queryset=Tag.objects.all(),
         required=True
     )
-    cooking_time = serializers.IntegerField(required=True)
+    cooking_time = serializers.IntegerField(
+        required=True,
+        validators=[
+            MinValueValidator(1)
+        ]
+    )
+
+    def validate_ingredients(self, value):
+        if not value:
+            raise serializers.ValidationError('This field may not be blank.')
+
+        result = {}
+        for item in value:
+            if item['id'] in result:
+                result[item['id']] += item['amount']
+            else:
+                result[item['id']] = item['amount']
+
+        validated_data = []
+        for key in result:
+            validated_data.append(
+                {
+                    'id': key,
+                    'amount': result[key]
+                }
+            )
+        return validated_data
+
+    def validate_tags(self, value):
+        if not value:
+            raise serializers.ValidationError('This field may not be blank.')
+        return value
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
