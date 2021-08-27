@@ -42,27 +42,39 @@ class UserCreateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
         validators=[
-            MaxLengthValidator(254),
+            MaxLengthValidator(
+                254,
+                message='Ensure email has at most 254 characters.'
+            ),
             unique_email_validator
         ]
     )
     username = serializers.CharField(
         required=True,
         validators=[
-            MaxLengthValidator(150),
+            MaxLengthValidator(
+                150,
+                message='Ensure username value has at most 150 characters.'
+            ),
             unique_username_validator
         ]
     )
     first_name = serializers.CharField(
         required=True,
         validators=[
-            MaxLengthValidator(150)
+            MaxLengthValidator(
+                150,
+                message='Ensure first_name has at most 150 characters.'
+            )
         ]
     )
     last_name = serializers.CharField(
         required=True,
         validators=[
-            MaxLengthValidator(150)
+            MaxLengthValidator(
+                150,
+                message='Ensure last_name has at most 150 characters.'
+            )
         ]
     )
     password = serializers.CharField(
@@ -150,10 +162,7 @@ class CreateRecipeIngredientsSerializer(serializers.Serializer):
         required=True
     )
     amount = serializers.IntegerField(
-        required=True,
-        validators=[
-            MinValueValidator(1)
-        ]
+        required=True
     )
 
 
@@ -173,20 +182,36 @@ class RecipesCreateSerializer(serializers.Serializer):
     cooking_time = serializers.IntegerField(
         required=True,
         validators=[
-            MinValueValidator(1)
+            MinValueValidator(
+                1,
+                message='Ensure cooking_time is greater than or equal to 1.'
+            )
         ]
     )
 
     def validate_ingredients(self, value):
         if not value:
-            raise serializers.ValidationError('This field may not be blank.')
+            raise serializers.ValidationError(
+                'Ingredients field may not be blank.'
+            )
+
+        validation_errors = []
 
         result = {}
         for item in value:
+            if item['amount'] < 1:
+                validation_errors.append(
+                    f'Ensure amount of {item["id"].name} '
+                    f'is greater than or equal to 1.'
+                )
+
             if item['id'] in result:
                 result[item['id']] += item['amount']
             else:
                 result[item['id']] = item['amount']
+
+        if validation_errors:
+            raise serializers.ValidationError(validation_errors)
 
         validated_data = []
         for key in result:
@@ -196,11 +221,12 @@ class RecipesCreateSerializer(serializers.Serializer):
                     'amount': result[key]
                 }
             )
+
         return validated_data
 
     def validate_tags(self, value):
         if not value:
-            raise serializers.ValidationError('This field may not be blank.')
+            raise serializers.ValidationError('Tags field may not be blank.')
         return value
 
     def create(self, validated_data):

@@ -10,7 +10,7 @@ services:
     env_file:
       - ../backend/.env
   backend:
-    image: daniilpanyushin/foodgram_backend:0.4
+    image: daniilpanyushin/foodgram_backend:0.5
     restart: always
     volumes:
       - static_files:/code/static/
@@ -20,7 +20,7 @@ services:
     env_file:
       - ../backend/.env
   frontend:
-    image: daniilpanyushin/foodgram_frontend:0.4
+    image: daniilpanyushin/foodgram_frontend:0.5
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
