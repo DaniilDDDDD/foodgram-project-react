@@ -1,5 +1,8 @@
 # Foodgram
 Product assistant
+
+Server address: 34.88.21.167
+
 Users can post here their recipes, tag them, add recipes to favourites, add recipes to shopping cart and easily get file with shopping list. 
 
 ## Getting Started
@@ -38,10 +41,3 @@ Then activate virtual environment, go to the root folder of the project and writ
 ### Authors
 
 * **Daniil Panyushin** - *Initial work* - [DaniilDDDDD](https://github.com/DaniilDDDDD)
-
-### For reviewer:
-server address: 34.88.21.167
-
-superuser username: test_admin
-
-superuser password: qwerty1234
