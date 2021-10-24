@@ -1,12 +1,12 @@
 # Foodgram
 Product assistant
 
-Server address: 34.88.21.167
+Server's address with working application: 34.88.21.167
 
 Users can post here their recipes, tag them, add recipes to favourites, add recipes to shopping cart and easily get file with shopping list. 
 
 ## Getting Started
-Clone repository with project from [GitHub](https://github.com/DaniilDDDDD/foodgram-project-react.git).
+Fork repository with project from [GitHub](https://github.com/DaniilDDDDD/foodgram-project-react.git).
 Create ```.env``` file with environment variables settings. Something like that:
 
 ```
