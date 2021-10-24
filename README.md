@@ -14,7 +14,7 @@ SECRET_KEY=3=r6q=h=n!&j2y8rg4rf1vr)6we0rc5^^)j=n03qg6x*q*jewri9
 ALLOWED_HOSTS=*
 DEBUG=True
 
-# парамметры для базы данных
+# database configuration
 DB_NAME=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=qwerty1234
