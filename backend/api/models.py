@@ -4,9 +4,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-User.USERNAME_FIELD = 'email'
-User.REQUIRED_FIELDS = ('username', )
-
 
 class Ingredient(models.Model):
     name = models.CharField(
