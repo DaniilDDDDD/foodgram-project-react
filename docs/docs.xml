@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ISSPECS SYSTEM "ISSpecs.dtd">
+
+<ISSPECS>
+    <DESCRIPTION>
+        <TITLE>
+            Foodgram
+        </TITLE>
+        <SUBJ>
+            Product assistant
+        </SUBJ>
+    </DESCRIPTION>
+
+    <DATA>
+        <ENTITY ent_id="User">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>username - Varchar(200)</PROPERTY>
+            <PROPERTY>email - Varchar(200)</PROPERTY>
+            <PROPERTY>first name - Varchar(200)</PROPERTY>
+            <PROPERTY>last name - Varchar(200)</PROPERTY>
+            <PROPERTY>is active - Boolean</PROPERTY>
+            <PROPERTY>is stuff - Boolean</PROPERTY>
+            <PROPERTY>role - Varchar(200)</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="Ingredient">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>name - Varchar(200)</PROPERTY>
+            <PROPERTY>measurement unit - Varchar(200)</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="Tag">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>name - Varchar(200)</PROPERTY>
+            <PROPERTY>colour - Varchar(200)</PROPERTY>
+            <PROPERTY>slug - Varchar(200)</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="Recipe">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>author - Integer</PROPERTY>
+            <PROPERTY>name - Varchar(200)</PROPERTY>
+            <PROPERTY>image - Varchar(200)</PROPERTY>
+            <PROPERTY>description - Text</PROPERTY>
+            <PROPERTY>cooking time - Integer</PROPERTY>
+            <PROPERTY>publication date - Datetime</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="RecipeIngredient">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>recipe - Integer</PROPERTY>
+            <PROPERTY>ingredient - Integer</PROPERTY>
+            <PROPERTY>amount - Integer</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="RecipeTag">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>recipe - Integer</PROPERTY>
+            <PROPERTY>tag - Integer</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="Favourite">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>user - Integer</PROPERTY>
+            <PROPERTY>recipe - Integer</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="Follow">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>user - Integer</PROPERTY>
+            <PROPERTY>author - Integer</PROPERTY>
+        </ENTITY>
+        <ENTITY ent_id="ShoppingCart">
+            <PROPERTY>id - Integer</PROPERTY>
+            <PROPERTY>user - Integer</PROPERTY>
+            <PROPERTY>recipe - Integer</PROPERTY>
+        </ENTITY>
+
+        <RELATIONSHIP ent_ids="Recipe User">
+            <PROPERTY>author</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="RecipeTag Recipe">
+            <PROPERTY>recipe</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="RecipeTag Tag">
+            <PROPERTY>tag</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="RecipeIngredient Ingredient">
+            <PROPERTY>ingredient</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="RecipeIngredient Recipe">
+            <PROPERTY>recipe</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="Favourite User">
+            <PROPERTY>user</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="Favourite Recipe">
+            <PROPERTY>recipe</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="Follow User">
+            <PROPERTY>author</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="Follow User">
+            <PROPERTY>user</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="ShoppingCart User">
+            <PROPERTY>user</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+        <RELATIONSHIP ent_ids="ShoppingCart Recipe">
+            <PROPERTY>recipe</PROPERTY>
+            <PROPERTY>id</PROPERTY>
+        </RELATIONSHIP>
+
+        <CONSTRAINT>
+            User:
+            {
+                id: INT PRIMARY KEY
+                username: UNIQUE, NOT NULL
+                email: UNIQUE, NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Recipe:
+            {
+                id: PRIMARY KEY
+                name: NOT NULL
+                image: NOT NULL
+                author: NOT NULL, REFERENCES User
+                cooking time: NOT NULL
+                publication date: NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Tag:
+            {
+                id: PRIMARY KEY
+                name: UNIQUE, NOT NULL
+                colour: UNIQUE, NOT NULL
+                slug: UNIQUE, NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Ingredient:
+            {
+                id: PRIMARY KEY
+                name: UNIQUE, NOT NULL
+                measurement unit: NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            RecipeIngredient:
+            {
+                id: PRIMARY KEY
+                recipe: NOT NULL, REFERENCES Recipe
+                ingredient: NOT NULL, REFERENCES Ingredient
+                amount: NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            RecipeTag:
+            {
+                id: PRIMARY KEY
+                recipe: NOT NULL
+                tag: NOT NULL
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Favourites:
+            {
+                id: PRIMARY KEY
+                recipe: NOT NULL, REFERENCES Recipe
+                user: NOT NULL, REFERENCES User
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Follow:
+            {
+                id: PRIMARY KEY
+                author: NOT NULL, REFERENCES Recipe
+                user: NOT NULL, REFERENCES User
+            }
+        </CONSTRAINT>
+        <CONSTRAINT>
+            Shopping cart:
+            {
+                id: PRIMARY KEY
+                recipe: NOT NULL, REFERENCES Recipe
+                user: NOT NULL, REFERENCES User
+            }
+        </CONSTRAINT>
+    </DATA>
+    <ROLES>
+        <ROLE>
+            <TITLE>Admin</TITLE>
+            <RESPONSIBILITY>
+                Controls database
+            </RESPONSIBILITY>
+            <TOTALUSERS>
+                1
+            </TOTALUSERS>
+        </ROLE>
+        <ROLE>
+            <TITLE>Guest</TITLE>
+            <RESPONSIBILITY>
+                Not authenticated user
+            </RESPONSIBILITY>
+            <TOTALUSERS>Inf</TOTALUSERS>
+        </ROLE>
+        <ROLE>
+            <TITLE>User</TITLE>
+            <RESPONSIBILITY>
+                Authenticated user
+            </RESPONSIBILITY>
+            <TOTALUSERS>Inf</TOTALUSERS>
+        </ROLE>
+    </ROLES>
+    <TECHSPEC>
+        <TYPE></TYPE>
+        <DEVTOOLS>
+            <DEV>Postgresql database</DEV>
+            <DEV>Django</DEV>
+            <DEV>React</DEV>
+            <DEV>Docker</DEV>
+        </DEVTOOLS>
+        <DBMS>
+            <TITLE>PostgreSQL</TITLE>
+            <VERSION>14.14</VERSION>
+            <REASONING>PostgreSQL is a powerful, open source object-relational database system with over 30 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.</REASONING>
+        </DBMS>
+    </TECHSPEC>
+</ISSPECS>
