@@ -5,7 +5,7 @@ Server's address with working application: 34.88.21.167
 
 Users can post here their recipes, tag them, add recipes to "favourites", add recipes to shopping cart and easily get file with shopping list. 
 
-##Getting Started
+## Getting Started
 Fork repository with project from [GitHub](https://github.com/DaniilDDDDD/foodgram-project-react.git).
 Create ```.env``` file with environment variables settings. Something like that:
 
@@ -29,21 +29,21 @@ docker-compose up --build -d
 Project is active
 You can choose ports in file docker-compose.yaml
 
-##Prerequisites
+## Prerequisites
 
 Install Docker using official [cite](https://www.docker.com/products/docker-desktop)
 
-##Deployment
+## Deployment
 
 To create superuser you can enter container 
 ```docker exec -it <CONTAINER ID> bash```
 Then activate virtual environment, go to the root folder of the project and write the same as in [Django-docs](https://docs.djangoproject.com/en/3.1/topics/auth/default/#creating-superusers)
 
-##Project's technical task
+## Project's technical task
 
-###Base models
+### Base models
 
-####User
+#### User
 Fields:
 
 * Username - Varchar(200), Unique
@@ -55,7 +55,7 @@ Fields:
 * Last login - Datetime
 
 
-####Recipe
+#### Recipe
 Fields:
 
 * Author - Foreign key to User model
@@ -67,7 +67,7 @@ Fields:
 * Cooking time - Integer
 * Publication date - Datetime
 
-####Tag
+#### Tag
 Fields: 
 
 * Name - Varchar(200), Unique
@@ -84,14 +84,14 @@ Fields:
 
 Ingredients are preset. Only admin can change list of ingredients.
 
-####RecipeIngredient
+#### RecipeIngredient
 Fields:
 
 * Recipe - Foreign key to Recipe model
 * Ingredient - Foreign key to Ingredient model
 * Amount - Integer(>=1)
 
-####Favourites
+#### Favourites
 Fields:
 
 * Recipe - Foreign key to Recipe model
@@ -108,33 +108,33 @@ Fields:
 * User - Foreign key to User model
 * Author - Foreign key to User model
 
-###Services and project's pages
+### Services and project's pages
 Project's design you can watch [here](https://www.figma.com/file/HHEJ68zF1bCa7Dx8ZsGxFh/Продуктовый-помощник-(Final)?node-id=0%3A1).
 
-####Home page
+#### Home page
 Home Page Content is a list of the first six recipes sorted by publication date (newest to oldest). The rest of recipes are available on the following pages: there is a pagination at the bottom of the page.
 
-####Recipe page
+#### Recipe page
 The page provides a complete description of the recipe. For authorized users - ability to add a recipe to favorites and to shopping list, ability to subscribe to author of the recipe. Recipe's author can change recipe data.
 
-####User's profile
+#### User's profile
 On page - username, all recipes posted by this user and possibility to subscribe the user.
 
-####Subscribing to Authors
+#### Subscribing to Authors
 Subscription to publications is available only to an authorized user. Subscription page is only available to the owner.
 User behavior scenario:
 * User goes to another user's page or to the recipe page and subscribes to the author's publications by clicking on the "Subscribe to author" button.
 * User goes to the "My Subscriptions" page and views list of recipes published by authors they subscribed to. Sorting records - by date of publication (from newest to oldest).
 * If necessary, user can unsubscribe from the author: he goes to the author's page or to the page of his recipe and clicks “Unsubscribe from the author”.
 
-####Favorites list
+#### Favorites list
 Only an authorized user can work with the favorites list. Only the owner of the favorites list can see it.
 User behavior scenario:
 * User marks one or several recipes by clicking on the "Add to favorites" button.
 * User navigates to the Favorites List page and views a personalized list of favorites.
 * If necessary, user can remove recipe from the favorites. 
 
-####Shopping list
+#### Shopping list
 Working with the shopping list is available to authorized users. The shopping list can only be viewed by its owner.
 User behavior scenario:
 * User marks one or more recipes by clicking on the "Add to purchases" button.
@@ -156,11 +156,11 @@ As a result, the shopping list looks like this:
 - Salt (to taste) - 4
 - Black pepper (pinch) - 3
 
-####Filtering by tags
+#### Filtering by tags
 Clicking on a tag name displays a list of recipes marked with this tag. Filtration can be carried out by several tags in the combination "or": if several tags are selected - as a result, recipes should be shown that are marked with at least one of these tags.
 When filtering on the user page, only the recipes of the selected user should be filtered. The same principle is followed when filtering the favorites list.
 
-####Registration and authorization
+#### Registration and authorization
 There are of registrations and authorization systems in project.
 
 Required fields for the user:
@@ -175,14 +175,14 @@ User access levels:
 - Authorized user
 - Administrator
 
-####Unauthorized users' permissions
+#### Unauthorized users' permissions
 - Create an account.
 - View recipes on the main page.
 - View individual recipe pages.
 - View user pages.
 - Filter recipes by tags.
 
-####Authorized users' permissions
+#### Authorized users' permissions
 - Log in to the system using your username and password.
 - Log out (log out).
 - Change your password.
@@ -195,7 +195,7 @@ User access levels:
 - Work with a personal shopping list: add / delete any recipes, upload a file with the amount of required ingredients for recipes from the shopping list.
 - Subscribe to and unsubscribe from recipe authors, view your subscriptions page.
 
-####Admins' permissions
+#### Admins' permissions
 The administrator has all the rights of an authorized user.
 Plus, he can:
 - change the password of any user,
@@ -204,7 +204,7 @@ Plus, he can:
 - add / remove / edit ingredients.
 - add / remove / edit tags.
 
-####Opportunities for functionality extending
+#### Opportunities for functionality extending
 It's possible to create filtering by ingredients' composition. For this you must create two more models: "ChemicalElement" and "IngredientComposition". The first model would store information about possible chemical elements of any ingredient. The second one would store chemical composition about every ingredient, stored in Ingredient table.  
 
 ## Authors
