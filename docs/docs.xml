@@ -196,23 +196,42 @@
         <ROLE>
             <TITLE>Admin</TITLE>
             <RESPONSIBILITY>
-                Controls database
+                The administrator has all the rights of an authorized user. Plus, he can:
+                change the password of any user,
+                create / block / delete user accounts,
+                edit / delete any recipes,
+                add / remove / edit ingredients,
+                add / remove / edit tags.
             </RESPONSIBILITY>
             <TOTALUSERS>
                 1
             </TOTALUSERS>
         </ROLE>
         <ROLE>
-            <TITLE>Guest</TITLE>
+            <TITLE>Unauthorized user</TITLE>
             <RESPONSIBILITY>
-                Not authenticated user
+                Create an account.
+                View recipes on the main page.
+                View individual recipe pages.
+                View user pages.
+                Filter recipes by tags.
             </RESPONSIBILITY>
             <TOTALUSERS>Inf</TOTALUSERS>
         </ROLE>
         <ROLE>
-            <TITLE>User</TITLE>
+            <TITLE>Authorized user</TITLE>
             <RESPONSIBILITY>
-                Authenticated user
+                Log in to the system using your username and password.
+                Log out (log out).
+                Change your password.
+                Create / edit / delete your own recipes.
+                View recipes on the main page.
+                View user pages.
+                View individual recipe pages.
+                Filter recipes by tags.
+                Work with your personal favorites list: add recipes to it or delete them, view your favorites page.
+                Work with a personal shopping list: add / delete any recipes, upload a file with the amount of required ingredients for recipes from the shopping list.
+                Subscribe to and unsubscribe from recipe authors, view your subscriptions page.
             </RESPONSIBILITY>
             <TOTALUSERS>Inf</TOTALUSERS>
         </ROLE>
