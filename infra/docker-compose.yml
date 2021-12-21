@@ -10,10 +10,10 @@ services:
     env_file:
       - ../backend/.env
   backend:
-    image: daniilpanyushin/foodgram_backend:0.6
-#    build:
-#      context: ../backend
-#      dockerfile: Dockerfile
+#    image: daniilpanyushin/foodgram_backend:0.6
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
     restart: always
     volumes:
       - static_files:/code/static/
@@ -23,10 +23,10 @@ services:
     env_file:
       - ../backend/.env
   frontend:
-    image: daniilpanyushin/foodgram_frontend:0.5
-    #build:
-     # context: ../frontend
-      #dockerfile: Dockerfile
+#    image: daniilpanyushin/foodgram_frontend:0.5
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
