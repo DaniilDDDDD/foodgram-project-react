@@ -1,8 +1,6 @@
 # Foodgram
 Product assistant
 
-Server's address with working application: 34.88.21.167
-
 Users can post here their recipes, tag them, add recipes to "favourites", add recipes to shopping cart and easily get file with shopping list. 
 
 ## Getting Started
@@ -34,6 +32,9 @@ You can choose ports in file docker-compose.yaml
 Install Docker using official [cite](https://www.docker.com/products/docker-desktop)
 
 ## Deployment
+
+By default superuser with username ```admin``` and password ```admin``` is created 
+so you can go to ```http://localhost/admin/``` to check it and create test data if you need it.
 
 To create superuser you can enter container 
 ```docker exec -it <CONTAINER ID> bash```
