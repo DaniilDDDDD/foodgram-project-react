@@ -3,6 +3,10 @@ Product assistant
 
 Users can post here their recipes, tag them, add recipes to "favourites", add recipes to shopping cart and easily get file with shopping list. 
 
+## Prerequisites
+
+Install Docker using official [cite](https://www.docker.com/products/docker-desktop)
+
 ## Getting Started
 Fork repository with project from [GitHub](https://github.com/DaniilDDDDD/foodgram-project-react.git).
 Create ```.env``` file with environment variables settings. Something like that:
@@ -27,18 +31,10 @@ docker-compose up --build -d
 Project is active
 You can choose ports in file docker-compose.yaml
 
-## Prerequisites
-
-Install Docker using official [cite](https://www.docker.com/products/docker-desktop)
-
-## Deployment
-
-By default superuser with username ```admin``` and password ```admin``` is created 
-so you can go to ```http://localhost/admin/``` to check it and create test data if you need it.
-
 To create superuser you can enter container 
 ```docker exec -it <CONTAINER ID> bash```
-Then activate virtual environment, go to the root folder of the project and write the same as in [Django-docs](https://docs.djangoproject.com/en/3.1/topics/auth/default/#creating-superusers)
+Then go to the root folder of the project and write the same as in [Django-docs](https://docs.djangoproject.com/en/3.1/topics/auth/default/#creating-superusers)
+Now you can go to ```http://localhost/admin/``` to enter admin page and create data if you need it.
 
 ## Project's technical task
 
