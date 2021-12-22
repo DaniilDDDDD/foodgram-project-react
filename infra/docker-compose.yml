@@ -10,7 +10,7 @@ services:
     env_file:
       - ../backend/.env
   backend:
-#    image: daniilpanyushin/foodgram_backend:0.6
+#    image: daniilpanyushin/foodgram_backend:0.5
     build:
       context: ../backend
       dockerfile: Dockerfile
